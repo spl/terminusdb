@@ -54,6 +54,12 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+
       - name: Install LLVM and SWI Prolog
         run: |
           # Install the latest stable LLVM and SWI Prolog using Chocolatey.
