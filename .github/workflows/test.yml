@@ -91,7 +91,9 @@ jobs:
       - name: Install terminus_store_prolog
         # Use Git Bash because the Makefile does not work in other shells.
         shell: bash
-        run: swipl -g "pack_install(terminus_store_prolog, [interactive(false), upgrade(true)])"
+        run: |
+          echo "LIBCLANG_PATH=$LIBCLANG_PATH"
+          swipl -g "pack_install(terminus_store_prolog, [interactive(false), upgrade(true)])"
 
       - name: Build
         # Use Git Bash because the Makefile does not work in other shells.
