@@ -1,4 +1,4 @@
-exports.Agent = require('./agents.js').Agent
+exports.Agent = require('./agent.js').Agent
 exports.branch = require('./branch.js')
 exports.db = require('./db.js')
 exports.document = require('./document.js')
