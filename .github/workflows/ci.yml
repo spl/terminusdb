@@ -92,10 +92,9 @@ jobs:
 
       - name: Run integration tests
         run: |
-          cd tests
           pwd
-          which npm
-          find .
+          ls -l
+          cd tests
           npm install
           npm test
 
