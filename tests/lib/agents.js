@@ -62,12 +62,10 @@ function auth (request) {
 
   const token = process.env.TERMINUSDB_ACCESS_TOKEN
   if (token) {
-    // return request.auth(token, { type: 'bearer' })
     request.auth(token, { type: 'bearer' })
   } else {
     const pass = process.env.TERMINUSDB_PASS
     assert(pass, 'Missing environment variable: TERMINUSDB_ACCESS_TOKEN or TERMINUSDB_PASS')
-    // return request.auth(user, pass)
     request.auth(user, pass)
   }
 }
