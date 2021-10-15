@@ -4,6 +4,8 @@ const superagent = require('superagent')
 const { Params } = require('./params.js')
 const util = require('./util.js')
 
+// This class encompasses the request agent from SuperAgent as well as some
+// agent-specific values that get used a lot in tests.
 class Agent {
   constructor (params) {
     params = new Params(params)
@@ -42,6 +44,13 @@ class Agent {
       })
     }
     return this
+  }
+
+  defaults () {
+    return {
+      orgName: this.orgName,
+      dbName: this.dbName,
+    }
   }
 
   get (path) {

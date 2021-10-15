@@ -1,5 +1,5 @@
 const { expect } = require('chai')
-const { Agent, db, document, util } = require('../lib')
+const { Agent, db, document, endpoint, util } = require('../lib')
 
 describe('document', function () {
   let agent
@@ -13,28 +13,26 @@ describe('document', function () {
     let docPath
 
     before(async function () {
-      dbPath = db.path()
-      docPath = document.path({
-        orgName: dbPath.orgName,
-        dbName: dbPath.dbName,
-      })
+      const dbDefaults = endpoint.db(agent.defaults())
+      dbPath = dbDefaults.path
+      docPath = endpoint.document(dbDefaults).path
 
-      await db.createAfterDel(agent, dbPath.path)
+      await db.createAfterDel(agent, dbPath)
     })
 
     after(async function () {
-      await db.del(agent, dbPath.path)
+      await db.del(agent, dbPath)
     })
 
     it('responds with expected @id values (object)', async function () {
       const id = util.randomString()
       await document
-        .insert(agent, docPath.path, {
+        .insert(agent, docPath, {
           schema: { '@type': 'Class', '@id': id },
         })
         .then(document.verifyInsertSuccess)
       await document
-        .insert(agent, docPath.path, {
+        .insert(agent, docPath, {
           instance: { '@type': id, '@id': `terminusdb:///data/${id}/0` },
         })
         .then(document.verifyInsertSuccess)
@@ -44,7 +42,7 @@ describe('document', function () {
       const id1 = util.randomString()
       const id2 = util.randomString()
       await document
-        .insert(agent, docPath.path, {
+        .insert(agent, docPath, {
           schema: [
             { '@type': 'Class', '@id': id1 },
             { '@type': 'Class', '@id': id2 },
@@ -52,7 +50,7 @@ describe('document', function () {
         })
         .then(document.verifyInsertSuccess)
       await document
-        .insert(agent, docPath.path, {
+        .insert(agent, docPath, {
           instance: [
             { '@type': id1, '@id': `terminusdb:///data/${id1}/1` },
             { '@type': id2, '@id': `terminusdb:///data/${id2}/2` },
@@ -65,7 +63,7 @@ describe('document', function () {
       const schema = { '@type': 'Class', '@subdocument': [] }
       {
         schema['@id'] = util.randomString()
-        const r = await document.insert(agent, docPath.path, { schema: schema })
+        const r = await document.insert(agent, docPath, { schema: schema })
         document.verifyInsertFailure(r)
         expect(r.body['api:error']['@type']).to.equal('api:SubdocumentKeyMissing')
         expect(r.body['api:error']['api:document']['@id']).to.equal(schema['@id'])
@@ -73,7 +71,7 @@ describe('document', function () {
       {
         schema['@id'] = util.randomString()
         schema['@key'] = { useless_key: 'useless_value' }
-        const r = await document.insert(agent, docPath.path, { schema: schema })
+        const r = await document.insert(agent, docPath, { schema: schema })
         document.verifyInsertFailure(r)
         expect(r.body['api:error']['@type']).to.equal('api:DocumentKeyTypeMissing')
         expect(r.body['api:error']['api:document']['@id']).to.equal(schema['@id'])
@@ -82,7 +80,7 @@ describe('document', function () {
       {
         schema['@id'] = util.randomString()
         schema['@key'] = { '@type': 'Unknown' }
-        const r = await document.insert(agent, docPath.path, { schema: schema })
+        const r = await document.insert(agent, docPath, { schema: schema })
         document.verifyInsertFailure(r)
         expect(r.body['api:error']['@type']).to.equal('api:DocumentKeyTypeUnknown')
         expect(r.body['api:error']['api:document']['@id']).to.equal(schema['@id'])
@@ -92,7 +90,7 @@ describe('document', function () {
 
     it('fails when @key value is not an object (#587)', async function () {
       const schema = { '@id': util.randomString(), '@type': 'Class', '@key': false }
-      const r = await document.insert(agent, docPath.path, { schema: schema })
+      const r = await document.insert(agent, docPath, { schema: schema })
 
       document.verifyInsertFailure(r)
       expect(r.body['api:error']['@type']).to.equal('api:DocumentKeyNotObject')

@@ -1,5 +1,5 @@
 const { expect } = require('chai')
-const { Agent, remote, util } = require('../lib')
+const { Agent, endpoint, util } = require('../lib')
 
 describe('remote-noauth', function () {
   let agent
@@ -19,7 +19,7 @@ describe('remote-noauth', function () {
   })
 
   it('fails on unknown database', async function () {
-    const { path, orgName, dbName } = remote.path()
+    const { path, orgName, dbName } = endpoint.remote(agent.defaults())
     const r = await agent.get(path)
     expect(r.status).to.equal(404)
     expect(r.body['@type']).to.equal('api:RemoteErrorResponse')

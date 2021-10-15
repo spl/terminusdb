@@ -101,6 +101,7 @@ jobs:
           TERMINUSDB_PASS: root
         run: |
           npm install
+          npm run check
           npm test
 
   # Begin deployment only for push events and certain refs.

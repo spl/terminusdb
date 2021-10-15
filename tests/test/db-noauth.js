@@ -1,5 +1,5 @@
 const { expect } = require('chai')
-const { Agent, db, util } = require('../lib')
+const { Agent, db, endpoint, util } = require('../lib')
 
 describe('db-noauth', function () {
   let agent
@@ -9,7 +9,7 @@ describe('db-noauth', function () {
   })
 
   it('fails on missing content-type', async function () {
-    const { path } = db.path()
+    const { path } = endpoint.db(agent.defaults())
     const r = await agent.post(path)
     expect(r.status).to.equal(400)
     expect(r.body['api:status']).to.equal('api:failure')
@@ -17,7 +17,7 @@ describe('db-noauth', function () {
   })
 
   it('fails on invalid JSON', async function () {
-    const { path } = db.path()
+    const { path } = endpoint.db(agent.defaults())
     const body = '{'
     const r = await agent
       .post(path)
@@ -29,7 +29,7 @@ describe('db-noauth', function () {
   })
 
   it('fails on missing comment and label', async function () {
-    const { path } = db.path()
+    const { path } = endpoint.db(agent.defaults())
     const bodies = [
       {},
       { comment: 'c' },
@@ -49,7 +49,7 @@ describe('db-noauth', function () {
   })
 
   it('fails on duplicate field (#603)', async function () {
-    const { path } = db.path()
+    const { path } = endpoint.db(agent.defaults())
     const r = await agent
       .post(path)
       .type('application/json')
@@ -60,7 +60,11 @@ describe('db-noauth', function () {
   })
 
   it('reports unknown organization', async function () {
-    const { path, orgName } = db.path({ orgName: 'unknownorg-' + util.randomString() })
+    const { path, orgName } = endpoint.db(
+      Object.assign(agent.defaults(), {
+        orgName: 'unknown-' + util.randomString(),
+      }),
+    )
 
     {
       const r = await db.create(agent, path)

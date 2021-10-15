@@ -1,5 +1,5 @@
 const { expect } = require('chai')
-const { Agent, db } = require('../lib')
+const { Agent, db, endpoint } = require('../lib')
 
 describe('db', function () {
   let agent
@@ -9,7 +9,7 @@ describe('db', function () {
   })
 
   it('fails on deleting nonexistent database', async function () {
-    const { path, orgName, dbName } = db.path()
+    const { path, orgName, dbName } = endpoint.db(agent.defaults())
 
     // Delete a database but don't verify.
     await db.delUnverified(agent, path)

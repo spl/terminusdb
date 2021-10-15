@@ -4,19 +4,6 @@ const { expect } = require('chai')
 const { Params } = require('./params.js')
 const util = require('./util.js')
 
-function path (params) {
-  params = new Params(params)
-  const orgName = params.string('orgName', process.env.TERMINUSDB_USER)
-  const dbName = params.string('dbName', 'db-' + util.randomString())
-  params.assertEmpty()
-
-  return {
-    path: `/api/document/${orgName}/${dbName}`,
-    orgName: orgName,
-    dbName: dbName,
-  }
-}
-
 function insert (agent, path, params) {
   params = new Params(params)
   const author = params.string('author', 'default_author')
@@ -80,7 +67,6 @@ function verifyInsertFailure (r) {
 }
 
 module.exports = {
-  path,
   insert,
   verifyInsertSuccess,
   verifyInsertFailure,

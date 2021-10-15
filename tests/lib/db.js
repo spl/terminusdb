@@ -1,20 +1,5 @@
 const { expect } = require('chai')
-
 const { Params } = require('./params.js')
-const util = require('./util.js')
-
-function path (params) {
-  params = new Params(params)
-  const orgName = params.string('orgName', process.env.TERMINUSDB_USER)
-  const dbName = params.string('dbName', 'db-' + util.randomString())
-  params.assertEmpty()
-
-  return {
-    path: `/api/db/${orgName}/${dbName}`,
-    orgName: orgName,
-    dbName: dbName,
-  }
-}
 
 function create (agent, path, params) {
   params = new Params(params)
@@ -78,7 +63,6 @@ function verifyDeleteNotFound (r) {
 }
 
 module.exports = {
-  path,
   create,
   del,
   delUnverified,

@@ -12,6 +12,7 @@
   },
   "scripts": {
     "lint": "eslint --fix .",
+    "check": "eslint .",
     "test": "mocha"
   },
   "author": "Sean Leather <sean@terminusdb.com>",

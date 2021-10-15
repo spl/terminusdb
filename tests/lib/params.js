@@ -1,3 +1,5 @@
+const assert = require('assert')
+
 const util = require('./util.js')
 
 class Params {
@@ -42,6 +44,13 @@ class Params {
       throw new Error(`Unexpected type for parameter '${key}'. Expected string, got: ${val.constructor.name || typeof val}`)
     }
 
+    return val
+  }
+
+  // Extract a string value. Assert if not there.
+  stringRequired (key) {
+    const val = this.string(key)
+    assert(val, `Missing required parameter: '${key}'`)
     return val
   }
 
