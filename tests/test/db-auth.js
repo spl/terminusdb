@@ -16,9 +16,7 @@ describe('db', function () {
 
     // Delete the same database.
     const r = await db.del(agent, path)
-    expect(r.status).to.equal(404)
-    expect(r.body['@type']).to.equal('api:DbDeleteErrorResponse')
-    expect(r.body['api:status']).to.equal('api:not_found')
+    db.verifyDeleteNotFound(r)
     expect(r.body['api:error']['@type']).to.equal('api:UnknownDatabase')
     expect(r.body['api:error']['api:organization_name']).to.equal(orgName)
     expect(r.body['api:error']['api:database_name']).to.equal(dbName)

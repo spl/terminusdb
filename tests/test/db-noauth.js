@@ -64,17 +64,13 @@ describe('db-noauth', function () {
 
     {
       const r = await db.create(agent, path)
-      expect(r.status).to.equal(400)
-      expect(r.body['@type']).to.equal('api:DbCreateErrorResponse')
-      expect(r.body['api:status']).to.equal('api:failure')
+      db.verifyCreateFailure(r)
       expect(r.body['api:error']['@type']).to.equal('api:UnknownOrganization')
       expect(r.body['api:error']['api:organization_name']).to.equal(orgName)
     }
     {
       const r = await db.del(agent, path)
-      expect(r.status).to.equal(400)
-      expect(r.body['@type']).to.equal('api:DbDeleteErrorResponse')
-      expect(r.body['api:status']).to.equal('api:failure')
+      db.verifyDeleteFailure(r)
       expect(r.body['api:error']['@type']).to.equal('api:UnknownOrganization')
       expect(r.body['api:error']['api:organization_name']).to.equal(orgName)
     }

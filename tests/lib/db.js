@@ -42,21 +42,39 @@ function createAfterDel (agent, path, params) {
   return (async () => {
     await delUnverified(agent, path)
     const r = await create(agent, path, params)
-    verifyCreate(r)
+    verifyCreateSuccess(r)
     return r
   })()
 }
 
-function verifyDelete (r) {
+function verifyCreateSuccess (r) {
   expect(r.status).to.equal(200)
-  expect(r.body['@type']).to.equal('api:DbDeleteResponse')
   expect(r.body['api:status']).to.equal('api:success')
+  expect(r.body['@type']).to.equal('api:DbCreateResponse')
 }
 
-function verifyCreate (r) {
+function verifyCreateFailure (r) {
+  expect(r.status).to.equal(400)
+  expect(r.body['@type']).to.equal('api:DbCreateErrorResponse')
+  expect(r.body['api:status']).to.equal('api:failure')
+}
+
+function verifyDeleteSuccess (r) {
   expect(r.status).to.equal(200)
-  expect(r.body['@type']).to.equal('api:DbCreateResponse')
   expect(r.body['api:status']).to.equal('api:success')
+  expect(r.body['@type']).to.equal('api:DbDeleteResponse')
+}
+
+function verifyDeleteFailure (r) {
+  expect(r.status).to.equal(400)
+  expect(r.body['api:status']).to.equal('api:failure')
+  expect(r.body['@type']).to.equal('api:DbDeleteErrorResponse')
+}
+
+function verifyDeleteNotFound (r) {
+  expect(r.status).to.equal(404)
+  expect(r.body['api:status']).to.equal('api:not_found')
+  expect(r.body['@type']).to.equal('api:DbDeleteErrorResponse')
 }
 
 module.exports = {
@@ -65,6 +83,9 @@ module.exports = {
   del,
   delUnverified,
   createAfterDel,
-  verifyDelete,
-  verifyCreate,
+  verifyCreateSuccess,
+  verifyCreateFailure,
+  verifyDeleteSuccess,
+  verifyDeleteFailure,
+  verifyDeleteNotFound,
 }
