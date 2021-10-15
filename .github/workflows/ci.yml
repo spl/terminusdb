@@ -91,8 +91,8 @@ jobs:
         uses: actions/setup-node@v2
 
       - name: Run integration tests
-        working-directory: tests
         run: |
+          cd tests
           pwd
           which npm
           find .
