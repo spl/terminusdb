@@ -90,10 +90,11 @@ jobs:
       - uses: actions/checkout@v2
 
       - name: Run integration tests
+        working-directory: tests
+        env:
+          TERMINUSDB_USER: admin
+          TERMINUSDB_PASS: root
         run: |
-          pwd
-          ls -l
-          cd tests
           npm install
           npm test
 
