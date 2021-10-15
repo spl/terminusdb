@@ -66,6 +66,9 @@ jobs:
         with:
           name: terminusdb-server-docker-image
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+
       - name: Run unit tests
         run: |
           docker load < terminusdb-server-docker-image.tar.gz
