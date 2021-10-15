@@ -1,11 +1,11 @@
 const { expect } = require('chai')
-const { agents, branch, util } = require('../lib')
+const { Agent, branch, util } = require('../lib')
 
 describe('branch', function () {
   let agent
 
   before(function () {
-    agent = agents.base().use(agents.auth)
+    agent = new Agent().auth()
   })
 
   it('fails on bad origin descriptor', async function () {

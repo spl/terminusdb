@@ -1,11 +1,11 @@
 const { expect } = require('chai')
-const { agents } = require('../lib')
+const { Agent } = require('../lib')
 
 describe('branch-noauth', function () {
   let agent
 
   before(function () {
-    agent = agents.base()
+    agent = new Agent()
   })
 
   it('fails on unknown descriptor', async function () {

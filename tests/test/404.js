@@ -1,11 +1,11 @@
 const { expect } = require('chai')
-const { agents } = require('../lib')
+const { Agent } = require('../lib')
 
 describe('404', function () {
   let agent
 
   before(function () {
-    agent = agents.base()
+    agent = new Agent()
   })
 
   it('reports missing path', async function () {

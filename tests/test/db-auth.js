@@ -1,11 +1,11 @@
 const { expect } = require('chai')
-const { agents, db } = require('../lib')
+const { Agent, db } = require('../lib')
 
 describe('db', function () {
   let agent
 
   before(function () {
-    agent = agents.base().use(agents.auth)
+    agent = new Agent().auth()
   })
 
   it('fails on deleting nonexistent database', async function () {

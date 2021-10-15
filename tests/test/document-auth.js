@@ -1,11 +1,11 @@
 const { expect } = require('chai')
-const { agents, db, document, util } = require('../lib')
+const { Agent, db, document, util } = require('../lib')
 
 describe('document', function () {
   let agent
 
   before(function () {
-    agent = agents.base().use(agents.auth)
+    agent = new Agent().auth()
   })
 
   describe('1 database, shared', function () {

@@ -1,7 +1,6 @@
 const util = require('./util.js')
 
 class Params {
-  // Construct a `Params`.
   constructor (params) {
     this.params = params || {}
   }

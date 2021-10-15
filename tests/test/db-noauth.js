@@ -1,11 +1,11 @@
 const { expect } = require('chai')
-const { agents, db, util } = require('../lib')
+const { Agent, db, util } = require('../lib')
 
 describe('db-noauth', function () {
   let agent
 
   before(function () {
-    agent = agents.base()
+    agent = new Agent()
   })
 
   it('fails on missing content-type', async function () {

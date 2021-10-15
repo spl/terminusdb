@@ -1,11 +1,11 @@
 const { expect } = require('chai')
-const { agents } = require('../lib')
+const { Agent } = require('../lib')
 
 describe('connect', function () {
   let agent
 
   before(function () {
-    agent = agents.base()
+    agent = new Agent()
   })
 
   it('responds with empty array', async function () {

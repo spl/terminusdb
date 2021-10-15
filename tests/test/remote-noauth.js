@@ -1,11 +1,11 @@
 const { expect } = require('chai')
-const { agents, remote, util } = require('../lib')
+const { Agent, remote, util } = require('../lib')
 
 describe('remote-noauth', function () {
   let agent
 
   before(function () {
-    agent = agents.base()
+    agent = new Agent()
   })
 
   it('fails on unknown descriptor', async function () {

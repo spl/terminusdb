@@ -1,22 +1,64 @@
 const assert = require('assert')
 const superagent = require('superagent')
 
-const baseUrl = process.env.TERMINUSDB_BASE_URL || 'http://localhost:6363'
+const { Params } = require('./params.js')
+const util = require('./util.js')
 
-// Create a base superagent with the base URL as a prefix for requests.
-function base () {
-  return superagent
-    .agent()
-    // Consider response status codes other than server errors as successful.
-    // See <https://visionmedia.github.io/superagent/#error-handling>.
-    .ok((r) => r.status < 500)
-    .use(prependBaseUrl)
-    .use(verboseError)
-}
+class Agent {
+  constructor (params) {
+    params = new Params(params)
+    this.baseUrl = params.string('baseUrl', process.env.TERMINUSDB_BASE_URL || 'http://localhost:6363')
+    this.orgName = params.string('orgName', process.env.TERMINUSDB_ORG || 'admin')
+    this.dbName = params.string('dbName', 'db-' + util.randomString())
+    params.assertEmpty()
 
-// This is an agent plugin that prepends the base URL.
-function prependBaseUrl (request) {
-  request.url = baseUrl + request.url
+    // Create a superagent with the base URL as a prefix for requests.
+    this.agent = superagent
+      .agent()
+      // Consider status codes other than server errors as successful.
+      // See <https://visionmedia.github.io/superagent/#error-handling>.
+      .ok((response) => response.status < 500)
+      .use((request) => {
+        request.url = this.baseUrl + request.url
+      })
+      .use(verboseError)
+  }
+
+  // Add authentication
+  auth () {
+    const user = process.env.TERMINUSDB_USER
+    assert(user, 'Missing environment variable: TERMINUSDB_USER')
+
+    const token = process.env.TERMINUSDB_ACCESS_TOKEN
+    if (token) {
+      this.agent.use((request) => {
+        request.auth(token, { type: 'bearer' })
+      })
+    } else {
+      const pass = process.env.TERMINUSDB_PASS
+      assert(pass, 'Missing environment variable: TERMINUSDB_ACCESS_TOKEN or TERMINUSDB_PASS')
+      this.agent.use((request) => {
+        request.auth(user, pass)
+      })
+    }
+    return this
+  }
+
+  get (path) {
+    return this.agent.get(path)
+  }
+
+  post (path) {
+    return this.agent.post(path)
+  }
+
+  put (path) {
+    return this.agent.put(path)
+  }
+
+  delete (path) {
+    return this.agent.delete(path)
+  }
 }
 
 // This is an agent plugin that prints the request and response to stderr when
@@ -55,23 +97,4 @@ function verboseError (request) {
   })
 }
 
-// This is an agent plugin that adds authentication.
-function auth (request) {
-  const user = process.env.TERMINUSDB_USER
-  assert(user, 'Missing environment variable: TERMINUSDB_USER')
-
-  const token = process.env.TERMINUSDB_ACCESS_TOKEN
-  if (token) {
-    request.auth(token, { type: 'bearer' })
-  } else {
-    const pass = process.env.TERMINUSDB_PASS
-    assert(pass, 'Missing environment variable: TERMINUSDB_ACCESS_TOKEN or TERMINUSDB_PASS')
-    request.auth(user, pass)
-  }
-}
-
-module.exports = {
-  baseUrl,
-  base,
-  auth,
-}
+module.exports = { Agent }
