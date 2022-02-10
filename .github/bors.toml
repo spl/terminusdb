@@ -3,3 +3,5 @@ status = [
   "integration_tests",
   "lint"
 ]
+use_squash_merge = true
+delete_merged_branches = true
