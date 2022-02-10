@@ -4005,7 +4005,6 @@ http_read_utf8(json_dict(JSON), Request) :-
  * - Read the request payload into a stream.
  */
 http_read_json_required(Output, Request) :-
-    check_content_type_json(Request),
     check_content_length(Request),
     http_read_utf8(Output, Request).
 
