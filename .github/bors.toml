@@ -1,4 +1,5 @@
 status = [
   "unit_tests",
-  "integration_tests"
+  "integration_tests",
+  "lint"
 ]
