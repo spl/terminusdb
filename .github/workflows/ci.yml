@@ -5,50 +5,31 @@ on:
     branches:
     tags:
     paths-ignore:
+      - '**.md'
       - 'docs/**'
       - LICENSE
-      - README.md
-  pull_request:
-    # Don't run if only the docs are changed.
-    paths-ignore:
-      - 'docs/**'
-      - LICENSE
-      - README.md
   workflow_dispatch:
-
-env:
-  TERMINUSDB_DOCKER_IMAGE_NAME: terminusdb/terminusdb-server
-  TERMINUSDB_DOCKER_IMAGE_TAG: terminusdb/terminusdb-server:local
-  TERMINUSDB_STORE_PROLOG_VERSION: v0.19.7
-  TUS_VERSION: v0.0.5
-  SWIPL_LINTER_VERSION: v0.7
-  NODE_VERSION: '16'
+  workflow_call:
 
 jobs:
 
-  # Check if this job is already running with the same or newer content.
-  #
-  # This should never skip push events: they are used by begin_deploy.
-  check_skip:
+  env:
     runs-on: ubuntu-latest
 
     outputs:
-      should_skip: ${{ steps.check_skip.outputs.should_skip }}
+      TERMINUSDB_DOCKER_IMAGE_NAME: terminusdb/terminusdb-server
+      TERMINUSDB_DOCKER_IMAGE_TAG: terminusdb/terminusdb-server:local
+      SWIPL_LINTER_VERSION: v0.7
+      NODE_VERSION: '16'
 
     steps:
-      - uses: fkirc/skip-duplicate-actions@master
-        id: check_skip
-        with:
-          concurrent_skipping: same_content_newer
-          do_not_skip: '["push", "workflow_dispatch", "schedule"]'
+      - run: echo "Cleaning up the environment! 😅"
 
   # Build the Docker image.
   build_docker:
     runs-on: ubuntu-latest
 
-    # Check if this job needs to run. We skip a pull_request after a push.
-    needs: check_skip
-    if: needs.check_skip.outputs.should_skip != 'true'
+    needs: env
 
     steps:
       - uses: actions/checkout@v2
@@ -57,9 +38,10 @@ jobs:
         run: |
           docker build . \
             --file Dockerfile \
-            --tag $TERMINUSDB_DOCKER_IMAGE_TAG \
+            --tag ${{ needs.env.outputs.TERMINUSDB_DOCKER_IMAGE_TAG }} \
             --build-arg TERMINUSDB_GIT_HASH="$(git rev-parse --verify HEAD)"
-          docker save $TERMINUSDB_DOCKER_IMAGE_TAG | gzip > terminusdb-server-docker-image.tar.gz
+          docker save ${{ needs.env.outputs.TERMINUSDB_DOCKER_IMAGE_TAG }} \
+            | gzip > terminusdb-server-docker-image.tar.gz
 
       - name: Upload Docker image
         uses: actions/upload-artifact@v2
@@ -80,12 +62,15 @@ jobs:
 
         # Can be found on: https://github.com/terminusdb-labs/swipl-lint/
       - name: Download script
-        run: curl -L "https://raw.githubusercontent.com/terminusdb-labs/swipl-lint/${SWIPL_LINTER_VERSION}/pl_lint.pl" > pl_lint.pl
+        run: curl -L "https://raw.githubusercontent.com/terminusdb-labs/swipl-lint/${{ needs.env.outputs.SWIPL_LINTER_VERSION }}/pl_lint.pl" > pl_lint.pl
 
       - name: Run linter
         run: |
           docker load < terminusdb-server-docker-image.tar.gz
-          docker run --name terminusdb -v $(pwd)/pl_lint.pl:/app/pl_lint.pl $TERMINUSDB_DOCKER_IMAGE_TAG \
+          docker run \
+            --name terminusdb \
+            -v $(pwd)/pl_lint.pl:/app/pl_lint.pl \
+            ${{ needs.env.outputs.TERMINUSDB_DOCKER_IMAGE_TAG }} \
             swipl -f src/load_paths.pl /app/pl_lint.pl
 
   # Unit tests
@@ -102,7 +87,10 @@ jobs:
       - name: Run unit tests
         run: |
           docker load < terminusdb-server-docker-image.tar.gz
-          docker run --name terminusdb $TERMINUSDB_DOCKER_IMAGE_TAG /app/terminusdb/terminusdb test
+          docker run \
+            --name terminusdb \
+            ${{ needs.env.outputs.TERMINUSDB_DOCKER_IMAGE_TAG }} \
+            /app/terminusdb/terminusdb test
 
   python_integration_tests:
     runs-on: ubuntu-latest
@@ -120,7 +108,9 @@ jobs:
           # Tag a dev image because the docker-compose.yml uses
           # a dev tag. We want it to fetch it locally instead of
           # remotely from Docker Hub
-          docker image tag $TERMINUSDB_DOCKER_IMAGE_TAG $TERMINUSDB_DOCKER_IMAGE_NAME:dev
+          docker image tag \
+            ${{ needs.env.outputs.TERMINUSDB_DOCKER_IMAGE_TAG }} \
+            ${{ needs.env.outputs.TERMINUSDB_DOCKER_IMAGE_NAME }}:dev
 
       - uses: actions/checkout@v2
         with:
@@ -153,11 +143,11 @@ jobs:
           docker run \
             --detach \
             --net=host \
-            $TERMINUSDB_DOCKER_IMAGE_TAG
+            ${{ needs.env.outputs.TERMINUSDB_DOCKER_IMAGE_TAG }}
 
       - uses: actions/setup-node@v2
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version: ${{ needs.env.outputs.NODE_VERSION }}
 
       - uses: actions/checkout@v2
 
@@ -186,11 +176,11 @@ jobs:
             --net=host \
             -e TERMINUSDB_INSECURE_USER_HEADER_ENABLED=true \
             -e TERMINUSDB_INSECURE_USER_HEADER='X-Forwarded-User' \
-            $TERMINUSDB_DOCKER_IMAGE_TAG
+            ${{ needs.env.outputs.TERMINUSDB_DOCKER_IMAGE_TAG }}
 
       - uses: actions/setup-node@v2
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version: ${{ needs.env.outputs.NODE_VERSION }}
 
       - uses: actions/checkout@v2
 
@@ -220,11 +210,11 @@ jobs:
             --net=host \
             -e TERMINUSDB_JWT_ENABLED=true \
             -e TERMINUSDB_SERVER_JWKS_ENDPOINT='https://cdn.terminusdb.com/jwks.json' \
-            $TERMINUSDB_DOCKER_IMAGE_TAG
+            ${{ needs.env.outputs.TERMINUSDB_DOCKER_IMAGE_TAG }}
 
       - uses: actions/setup-node@v2
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version: ${{ needs.env.outputs.NODE_VERSION }}
 
       - uses: actions/checkout@v2
 
@@ -265,11 +255,11 @@ jobs:
           docker run \
             --detach \
             --net=host \
-            $TERMINUSDB_DOCKER_IMAGE_TAG
+            ${{ needs.env.outputs.TERMINUSDB_DOCKER_IMAGE_TAG }}
 
       - uses: actions/setup-node@v2
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version: ${{ needs.env.outputs.NODE_VERSION }}
 
       - uses: actions/checkout@v2
 
@@ -315,7 +305,7 @@ jobs:
         run: |
           echo '${{ secrets.DOCKER_PASS }}' | docker login -u terminusdb --password-stdin
 
-          IMAGE_ID=$TERMINUSDB_DOCKER_IMAGE_NAME
+          IMAGE_ID=${{ needs.env.outputs.TERMINUSDB_DOCKER_IMAGE_NAME }}
           # Change all uppercase to lowercase
           IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
           # Strip git ref prefix from version
@@ -327,14 +317,14 @@ jobs:
           echo VERSION=$VERSION
 
           docker load < terminusdb-server-docker-image.tar.gz
-          docker tag $TERMINUSDB_DOCKER_IMAGE_TAG $IMAGE_ID:$VERSION
+          docker tag ${{ needs.env.outputs.TERMINUSDB_DOCKER_IMAGE_TAG }} $IMAGE_ID:$VERSION
           docker push $IMAGE_ID:$VERSION
 
           # Use dev-COMMITHASH tag for each development
           # version. We clean up after a certain amount of time.
           if [ "$VERSION" == "dev" ]; then
              DEV_COMMIT_TAG=${IMAGE_ID}:${VERSION}-${GITHUB_SHA}
-             docker tag $TERMINUSDB_DOCKER_IMAGE_TAG $DEV_COMMIT_TAG
+             docker tag ${{ needs.env.outputs.TERMINUSDB_DOCKER_IMAGE_TAG }} $DEV_COMMIT_TAG
              docker push $DEV_COMMIT_TAG
           fi
 
