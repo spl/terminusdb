@@ -28,7 +28,6 @@ jobs:
   # Build the Docker image.
   build_docker:
     runs-on: ubuntu-latest
-
     needs: env
 
     steps:
@@ -76,7 +75,9 @@ jobs:
   # Unit tests
   unit_tests:
     runs-on: ubuntu-latest
-    needs: build_docker
+    needs:
+      - env
+      - build_docker
 
     steps:
       - name: Download Docker image
@@ -94,7 +95,9 @@ jobs:
 
   python_integration_tests:
     runs-on: ubuntu-latest
-    needs: build_docker
+    needs:
+      - env
+      - build_docker
 
     steps:
       - name: Download Docker image
@@ -129,7 +132,9 @@ jobs:
   # Integration tests
   integration_tests:
     runs-on: ubuntu-latest
-    needs: build_docker
+    needs:
+      - env
+      - build_docker
 
     steps:
       - name: Download Docker image
@@ -160,7 +165,9 @@ jobs:
   # Integration tests with insecure user header
   integration_tests_user_header:
     runs-on: ubuntu-latest
-    needs: build_docker
+    needs:
+      - env
+      - build_docker
 
     steps:
       - name: Download Docker image
@@ -194,7 +201,9 @@ jobs:
   # Integration tests with JWT
   integration_tests_jwt:
     runs-on: ubuntu-latest
-    needs: build_docker
+    needs:
+      - env
+      - build_docker
 
     steps:
       - name: Download Docker image
@@ -241,7 +250,9 @@ jobs:
 
   benchmark:
     runs-on: ubuntu-latest
-    needs: build_docker
+    needs:
+      - env
+      - build_docker
 
     steps:
       - name: Download Docker image
@@ -293,7 +304,9 @@ jobs:
   # Push Docker image to container repository.
   push_docker:
     runs-on: ubuntu-latest
-    needs: begin_deploy
+    needs:
+      - env
+      - begin_deploy
 
     steps:
       - name: Download Docker image
@@ -336,7 +349,7 @@ jobs:
 
   trigger_enterprise_build:
     runs-on: ubuntu-latest
-    needs: [push_docker]
+    needs: push_docker
     if: |
       github.repository == 'terminusdb/terminusdb' &&
       github.event_name == 'push' && (
@@ -351,7 +364,7 @@ jobs:
             -u rrooij:${{ secrets.PAT }} -d '{ "event_type": "Trigger from community" }'
   deploy:
     runs-on: ubuntu-latest
-    needs: [push_docker]
+    needs: push_docker
     if: |
       github.repository == 'terminusdb/terminusdb' &&
       github.event_name == 'push' && (
