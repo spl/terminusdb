@@ -19,7 +19,6 @@ jobs:
     outputs:
       TERMINUSDB_DOCKER_IMAGE_NAME: terminusdb/terminusdb-server
       TERMINUSDB_DOCKER_IMAGE_TAG: terminusdb/terminusdb-server:local
-      SWIPL_LINTER_VERSION: v0.7
       NODE_VERSION: '16'
 
     steps:
@@ -51,6 +50,8 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     needs: build_docker
+    env:
+      SWIPL_LINTER_VERSION: v0.7
 
     steps:
 
@@ -61,7 +62,7 @@ jobs:
 
         # Can be found on: https://github.com/terminusdb-labs/swipl-lint/
       - name: Download script
-        run: curl -L "https://raw.githubusercontent.com/terminusdb-labs/swipl-lint/${{ needs.env.outputs.SWIPL_LINTER_VERSION }}/pl_lint.pl" > pl_lint.pl
+        run: curl -L "https://raw.githubusercontent.com/terminusdb-labs/swipl-lint/$SWIPL_LINTER_VERSION/pl_lint.pl" > pl_lint.pl
 
       - name: Run linter
         run: |
