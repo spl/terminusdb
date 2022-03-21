@@ -135,6 +135,8 @@ jobs:
     needs:
       - env
       - build_docker
+    env:
+      TERMINUSDB_DOCKER_IMAGE_TAG: ${{ needs.env.outputs.TERMINUSDB_DOCKER_IMAGE_TAG }}
 
     steps:
       - name: Download Docker image
@@ -168,6 +170,8 @@ jobs:
     needs:
       - env
       - build_docker
+    env:
+      TERMINUSDB_DOCKER_IMAGE_TAG: ${{ needs.env.outputs.TERMINUSDB_DOCKER_IMAGE_TAG }}
 
     steps:
       - name: Download Docker image
@@ -204,6 +208,8 @@ jobs:
     needs:
       - env
       - build_docker
+    env:
+      TERMINUSDB_DOCKER_IMAGE_TAG: ${{ needs.env.outputs.TERMINUSDB_DOCKER_IMAGE_TAG }}
 
     steps:
       - name: Download Docker image
