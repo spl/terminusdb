@@ -1,0 +1,17 @@
+name: CI for PR
+
+on:
+  pull_request:
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - LICENSE
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+
+  ci:
+    uses: terminusdb/terminusdb/.github/workflows/ci.yml@main
