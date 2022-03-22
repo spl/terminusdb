@@ -15,4 +15,4 @@ concurrency:
 jobs:
 
   ci:
-    uses: terminusdb/terminusdb/.github/workflows/ci.yml@improve-github-actions
+    uses: spl/terminusdb/.github/workflows/ci.yml@main
