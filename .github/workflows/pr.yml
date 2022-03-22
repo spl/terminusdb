@@ -1,4 +1,4 @@
-name: CI for PR
+name: PR
 
 on:
   pull_request:
@@ -7,6 +7,7 @@ on:
       - 'docs/**'
       - LICENSE
 
+# Prevent redundant workflows triggered by push and pull_request events.
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
