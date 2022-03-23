@@ -68,7 +68,7 @@ jobs:
         run: tox -e test
 
   basic_auth:
-    name: With basic auth
+    name: Basic auth
     runs-on: ubuntu-latest
 
     steps:
@@ -100,7 +100,7 @@ jobs:
           npm run check
 
   user_header:
-    name: With user header
+    name: User header
     runs-on: ubuntu-latest
 
     steps:
@@ -133,7 +133,7 @@ jobs:
         run: npm install-ci-test
 
   jwt:
-    name: With JWT
+    name: JWT
     runs-on: ubuntu-latest
 
     steps:
