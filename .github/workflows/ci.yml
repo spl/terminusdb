@@ -16,6 +16,9 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  NODE_VERSION: '16'
+
 jobs:
 
   # Build the Docker image.
@@ -25,18 +28,13 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - uses: falti/dotenv-action@v0.2.7
-        id: env
-        with:
-          log-variables: true
-
       - name: Build Docker image
         run: |
           docker build . \
             --file Dockerfile \
-            --tag ${{ steps.env.outputs.IMAGE_NAME }}:local \
+            --tag terminusdb/terminusdb-server:local \
             --build-arg TERMINUSDB_GIT_HASH="$(git rev-parse --verify HEAD)"
-          docker save ${{ steps.env.outputs.IMAGE_NAME }}:local \
+          docker save terminusdb/terminusdb-server:local \
             | gzip > terminusdb-server-docker-image.tar.gz
 
       - name: Upload Docker image
@@ -57,9 +55,6 @@ jobs:
         with:
           name: terminusdb-server-docker-image
 
-      - uses: falti/dotenv-action@v0.2.7
-        id: env
-
         # Can be found on: https://github.com/terminusdb-labs/swipl-lint/
       - name: Download script
         run: curl -L "https://raw.githubusercontent.com/terminusdb-labs/swipl-lint/$SWIPL_LINTER_VERSION/pl_lint.pl" > pl_lint.pl
@@ -70,7 +65,7 @@ jobs:
           docker run \
             --name terminusdb \
             -v $(pwd)/pl_lint.pl:/app/pl_lint.pl \
-            ${{ steps.env.outputs.IMAGE_NAME }}:local \
+            terminusdb/terminusdb-server:local \
             swipl -f src/load_paths.pl /app/pl_lint.pl
 
   # Unit tests
@@ -84,15 +79,12 @@ jobs:
         with:
           name: terminusdb-server-docker-image
 
-      - uses: falti/dotenv-action@v0.2.7
-        id: env
-
       - name: Run unit tests
         run: |
           docker load < terminusdb-server-docker-image.tar.gz
           docker run \
             --name terminusdb \
-            ${{ steps.env.outputs.IMAGE_NAME }}:local \
+            terminusdb/terminusdb-server:local \
             /app/terminusdb/terminusdb test
 
   python_integration_tests:
@@ -105,9 +97,6 @@ jobs:
         with:
           name: terminusdb-server-docker-image
 
-      - uses: falti/dotenv-action@v0.2.7
-        id: env
-
       - name: Load Docker image
         run: |
           docker load < terminusdb-server-docker-image.tar.gz
@@ -115,8 +104,8 @@ jobs:
           # a dev tag. We want it to fetch it locally instead of
           # remotely from Docker Hub
           docker image tag \
-            ${{ steps.env.outputs.IMAGE_NAME }}:local \
-            ${{ steps.env.outputs.IMAGE_NAME }}:dev
+            terminusdb/terminusdb-server:local \
+            terminusdb/terminusdb-server:dev
 
       - uses: actions/checkout@v2
         with:
@@ -143,27 +132,24 @@ jobs:
         with:
           name: terminusdb-server-docker-image
 
-      - uses: falti/dotenv-action@v0.2.7
-        id: env
-
       - name: Run server
         run: |
           docker load < terminusdb-server-docker-image.tar.gz
           docker run \
             --detach \
             --net=host \
-            ${{ steps.env.outputs.IMAGE_NAME }}:local
+            terminusdb/terminusdb-server:local
 
       - uses: actions/setup-node@v2
         with:
-          node-version: ${{ steps.env.outputs.NODE_VERSION }}
+          node-version: '16'
 
       - uses: actions/checkout@v2
 
       - name: Run integration tests
         working-directory: tests
         env:
-          TERMINUSDB_DOCKER_IMAGE_TAG: ${{ steps.env.outputs.IMAGE_NAME }}:local
+          TERMINUSDB_DOCKER_IMAGE_TAG: terminusdb/terminusdb-server:local
         run: |
           npm install-ci-test
           npm run check
@@ -179,9 +165,6 @@ jobs:
         with:
           name: terminusdb-server-docker-image
 
-      - uses: falti/dotenv-action@v0.2.7
-        id: env
-
       - name: Run server
         run: |
           docker load < terminusdb-server-docker-image.tar.gz
@@ -190,18 +173,18 @@ jobs:
             --net=host \
             -e TERMINUSDB_INSECURE_USER_HEADER_ENABLED=true \
             -e TERMINUSDB_INSECURE_USER_HEADER='X-Forwarded-User' \
-            ${{ steps.env.outputs.IMAGE_NAME }}:local
+            terminusdb/terminusdb-server:local
 
       - uses: actions/setup-node@v2
         with:
-          node-version: ${{ steps.env.outputs.NODE_VERSION }}
+          node-version: ${{ env.NODE_VERSION }}
 
       - uses: actions/checkout@v2
 
       - name: Run integration tests
         working-directory: tests
         env:
-          TERMINUSDB_DOCKER_IMAGE_TAG: ${{ steps.env.outputs.IMAGE_NAME }}:local
+          TERMINUSDB_DOCKER_IMAGE_TAG: terminusdb/terminusdb-server:local
           TERMINUSDB_INSECURE_USER_HEADER: X-Forwarded-User
         run: |
           npm install-ci-test
@@ -217,9 +200,6 @@ jobs:
         with:
           name: terminusdb-server-docker-image
 
-      - uses: falti/dotenv-action@v0.2.7
-        id: env
-
       - name: Run server
         run: |
           docker load < terminusdb-server-docker-image.tar.gz
@@ -228,18 +208,18 @@ jobs:
             --net=host \
             -e TERMINUSDB_JWT_ENABLED=true \
             -e TERMINUSDB_SERVER_JWKS_ENDPOINT='https://cdn.terminusdb.com/jwks.json' \
-            ${{ steps.env.outputs.IMAGE_NAME }}:local
+            terminusdb/terminusdb-server:local
 
       - uses: actions/setup-node@v2
         with:
-          node-version: ${{ steps.env.outputs.NODE_VERSION }}
+          node-version: ${{ env.NODE_VERSION }}
 
       - uses: actions/checkout@v2
 
       - name: Run integration tests
         working-directory: tests
         env:
-          TERMINUSDB_DOCKER_IMAGE_TAG: ${{ steps.env.outputs.IMAGE_NAME }}:local
+          TERMINUSDB_DOCKER_IMAGE_TAG: terminusdb/terminusdb-server:local
           TERMINUSDB_ACCESS_TOKEN: eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InRlc3RrZXkifQ.eyJodHRwOi8vdGVybWludXNkYi5jb20vc2NoZW1hL3N5c3RlbSNhZ2VudF9uYW1lIjoiYWRtaW4iLCJodHRwOi8vdGVybWludXNkYi5jb20vc2NoZW1hL3N5c3RlbSN1c2VyX2lkZW50aWZpZXIiOiJhZG1pbkB1c2VyLmNvbSIsImlzcyI6Imh0dHBzOi8vdGVybWludXNodWIuZXUuYXV0aDAuY29tLyIsInN1YiI6ImFkbWluIiwiYXVkIjpbImh0dHBzOi8vdGVybWludXNodWIvcmVnaXN0ZXJVc2VyIiwiaHR0cHM6Ly90ZXJtaW51c2h1Yi5ldS5hdXRoMC5jb20vdXNlcmluZm8iXSwiaWF0IjoxNTkzNzY5MTgzLCJhenAiOiJNSkpuZEdwMHpVZE03bzNQT1RRUG1SSkltWTJobzBhaSIsInNjb3BlIjoib3BlbmlkIHByb2ZpbGUgZW1haWwifQ.Ru03Bi6vSIQ57bC41n6fClSdxlb61m0xX6Q34Yh91gql0_CyfYRWTuqzqPMFoCefe53hPC5E-eoSFdID_u6w1ih_pH-lTTqus9OWgi07Qou3QNs8UZBLiM4pgLqcBKs0N058jfg4y6h9GjIBGVhX9Ni2ez3JGNcz1_U45BhnreE
         run: |
           npm install-ci-test
@@ -268,20 +248,17 @@ jobs:
         with:
           name: terminusdb-server-docker-image
 
-      - uses: falti/dotenv-action@v0.2.7
-        id: env
-
       - name: Run server
         run: |
           docker load < terminusdb-server-docker-image.tar.gz
           docker run \
             --detach \
             --net=host \
-            ${{ steps.env.outputs.IMAGE_NAME }}:local
+            terminusdb/terminusdb-server:local
 
       - uses: actions/setup-node@v2
         with:
-          node-version: ${{ steps.env.outputs.NODE_VERSION }}
+          node-version: ${{ env.NODE_VERSION }}
 
       - uses: actions/checkout@v2
 
@@ -323,9 +300,6 @@ jobs:
         with:
           name: terminusdb-server-docker-image
 
-      - uses: falti/dotenv-action@v0.2.7
-        id: env
-
       - name: Push image to Docker Container Registry
         run: |
           echo '${{ secrets.DOCKER_PASS }}' | docker login -u terminusdb --password-stdin
@@ -339,10 +313,10 @@ jobs:
           docker load < terminusdb-server-docker-image.tar.gz
 
           # Image identifiers
-          LOCAL_IMAGE=${{ steps.env.outputs.IMAGE_NAME }}:local
-          VERSION_IMAGE=${{ steps.env.outputs.IMAGE_NAME }}:$VERSION
-          DEV_COMMIT_IMAGE=${{ steps.env.outputs.IMAGE_NAME }}:$VERSION-$GITHUB_SHA
-          LATEST_IMAGE=${{ steps.env.outputs.IMAGE_NAME }}:latest
+          LOCAL_IMAGE=terminusdb/terminusdb-server:local
+          VERSION_IMAGE=terminusdb/terminusdb-server:$VERSION
+          DEV_COMMIT_IMAGE=terminusdb/terminusdb-server:$VERSION-$GITHUB_SHA
+          LATEST_IMAGE=terminusdb/terminusdb-server:latest
 
           # Tag and push the version image
           docker tag $LOCAL_IMAGE $VERSION_IMAGE
