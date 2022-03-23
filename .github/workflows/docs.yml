@@ -12,6 +12,11 @@ on:
       - 'docs/**'
       - LICENSE
 
+# Prevent redundant workflows triggered by push and pull_request events.
+concurrency:
+  group: docs-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
 
   # This is required for status checks. Since we don't have anything to check in
