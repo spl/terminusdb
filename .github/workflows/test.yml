@@ -6,7 +6,7 @@ on:
 jobs:
 
   lint:
-    name: Lint Prolog
+    name: Lint
     runs-on: ubuntu-latest
     env:
       SWIPL_LINTER_VERSION: v0.7
@@ -31,7 +31,7 @@ jobs:
             swipl -f src/load_paths.pl /app/pl_lint.pl
 
   unit_tests:
-    name: Run unit tests
+    name: Unit tests
     runs-on: ubuntu-latest
 
     steps:
@@ -49,7 +49,7 @@ jobs:
             /app/terminusdb/terminusdb test
 
   python_tests:
-    name: Run Python tests
+    name: Python tests
     runs-on: ubuntu-latest
 
     steps:
@@ -83,7 +83,7 @@ jobs:
         run: tox -e test
 
   integration_tests:
-    name: Run integration tests (basic auth)
+    name: Integration tests (basic auth)
     runs-on: ubuntu-latest
 
     steps:
@@ -115,7 +115,7 @@ jobs:
           npm run check
 
   integration_tests_user_header:
-    name: Run integration tests (user header)
+    name: Integration tests (user header)
     runs-on: ubuntu-latest
 
     steps:
@@ -148,7 +148,7 @@ jobs:
         run: npm install-ci-test
 
   integration_tests_jwt:
-    name: Run integration tests (JWT)
+    name: Integration tests (JWT)
     runs-on: ubuntu-latest
 
     steps:

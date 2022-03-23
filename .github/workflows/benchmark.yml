@@ -6,7 +6,7 @@ on:
 jobs:
 
   benchmark:
-    name: Benchmark
+    name: Run
     runs-on: ubuntu-latest
 
     steps:
