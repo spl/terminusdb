@@ -19,4 +19,4 @@ jobs:
   all_checks_pass:
     runs-on: ubuntu-latest
     steps:
-      - run: echo "Nothing to be done. 😌
+      - run: echo "Nothing to be done. 😌"
