@@ -57,7 +57,7 @@ debug: $(RUST_TARGET)
 
 # Run the unit tests in the swipl REPL.
 .PHONY: test
-test:
+test: $(RUST_TARGET)
 	$(SWIPL) -t 'run_tests, halt.' -f src/bootstrap.pl
 
 # Quick command for interactive
