@@ -3,6 +3,9 @@ name: Test
 on:
   workflow_call:
 
+env:
+  NODE_VERSION: '16'
+
 jobs:
 
   lint:
@@ -31,7 +34,7 @@ jobs:
             swipl -f src/load_paths.pl /app/pl_lint.pl
 
   unit_tests:
-    name: Unit tests
+    name: Unit
     runs-on: ubuntu-latest
 
     steps:
@@ -49,7 +52,7 @@ jobs:
             /app/terminusdb/terminusdb test
 
   python_tests:
-    name: Python tests
+    name: Python client
     runs-on: ubuntu-latest
 
     steps:
@@ -83,7 +86,7 @@ jobs:
         run: tox -e test
 
   integration_tests:
-    name: Integration tests (basic auth)
+    name: Integration (basic auth)
     runs-on: ubuntu-latest
 
     steps:
@@ -115,7 +118,7 @@ jobs:
           npm run check
 
   integration_tests_user_header:
-    name: Integration tests (user header)
+    name: Integration (user header)
     runs-on: ubuntu-latest
 
     steps:
@@ -148,7 +151,7 @@ jobs:
         run: npm install-ci-test
 
   integration_tests_jwt:
-    name: Integration tests (JWT)
+    name: Integration (JWT)
     runs-on: ubuntu-latest
 
     steps:

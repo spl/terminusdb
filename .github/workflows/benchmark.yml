@@ -3,6 +3,9 @@ name: Benchmark
 on:
   workflow_call:
 
+env:
+  NODE_VERSION: '16'
+
 jobs:
 
   benchmark:

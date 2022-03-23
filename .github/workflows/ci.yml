@@ -14,9 +14,6 @@ concurrency:
   group: ci-${{ github.sha }}
   cancel-in-progress: true
 
-env:
-  NODE_VERSION: '16'
-
 jobs:
 
   build:
