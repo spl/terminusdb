@@ -33,24 +33,6 @@ jobs:
             terminusdb/terminusdb-server:local \
             swipl -f src/load_paths.pl /app/pl_lint.pl
 
-  unit_tests:
-    name: Unit
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Download Docker image
-        uses: actions/download-artifact@v2
-        with:
-          name: terminusdb-server-docker-image
-
-      - name: Run unit tests
-        run: |
-          docker load < terminusdb-server-docker-image.tar.gz
-          docker run \
-            --name terminusdb \
-            terminusdb/terminusdb-server:local \
-            /app/terminusdb/terminusdb test
-
   python_tests:
     name: Python client
     runs-on: ubuntu-latest

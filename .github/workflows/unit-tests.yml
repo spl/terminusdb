@@ -1,0 +1,29 @@
+name: Unit tests
+
+on:
+  workflow_call:
+
+jobs:
+
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - run: ./.github/install-swi-prolog.sh stable
+
+      - name: Check out tus
+        uses: actions/checkout@v2
+        with:
+          repository: terminusdb/tus
+          path: tus
+          ref: v0.0.5
+
+      - name: Install tus
+        run: swipl -g "pack_install('file://$GITHUB_WORKSPACE/tus', [interactive(false)])"
+
+      - name: Install terminus_store_prolog
+        run: swipl -g "pack_install(terminus_store_prolog, [interactive(false), upgrade(true)])"
+
+      - run: make test

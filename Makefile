@@ -55,6 +55,11 @@ enterprise-module: $(RUST_TARGET)
 debug: $(RUST_TARGET)
 	echo "main, halt." | $(SWIPL) -f src/bootstrap.pl
 
+# Run the unit tests in the swipl REPL.
+.PHONY: test
+test:
+	$(SWIPL) -t 'run_tests, halt.' -f src/bootstrap.pl
+
 # Quick command for interactive
 .PHONY: i
 i: $(RUST_TARGET)
