@@ -8,8 +8,6 @@ on:
       - '**.md'
       - 'docs/**'
       - LICENSE
-  workflow_dispatch:
-  workflow_call:
 
 # Prevent redundant workflows triggered by push and pull_request events.
 concurrency:
@@ -21,258 +19,30 @@ env:
 
 jobs:
 
-  # Build the Docker image.
-  build_docker:
-    runs-on: ubuntu-latest
+  build:
+    name: Build
+    uses: ./.github/workflows/build.yml
 
-    steps:
-      - uses: actions/checkout@v2
+  test:
+    name: Test
+    needs: build
+    uses: ./.github/workflows/test.yml
 
-      - name: Build Docker image
-        run: |
-          docker build . \
-            --file Dockerfile \
-            --tag terminusdb/terminusdb-server:local \
-            --build-arg TERMINUSDB_GIT_HASH="$(git rev-parse --verify HEAD)"
-          docker save terminusdb/terminusdb-server:local \
-            | gzip > terminusdb-server-docker-image.tar.gz
-
-      - name: Upload Docker image
-        uses: actions/upload-artifact@v2
-        with:
-            name: terminusdb-server-docker-image
-            path: terminusdb-server-docker-image.tar.gz
-
-  lint:
-    runs-on: ubuntu-latest
-    needs: build_docker
-    env:
-      SWIPL_LINTER_VERSION: v0.7
-
-    steps:
-      - name: Download Docker image
-        uses: actions/download-artifact@v2
-        with:
-          name: terminusdb-server-docker-image
-
-        # Can be found on: https://github.com/terminusdb-labs/swipl-lint/
-      - name: Download script
-        run: curl -L "https://raw.githubusercontent.com/terminusdb-labs/swipl-lint/$SWIPL_LINTER_VERSION/pl_lint.pl" > pl_lint.pl
-
-      - name: Run linter
-        run: |
-          docker load < terminusdb-server-docker-image.tar.gz
-          docker run \
-            --name terminusdb \
-            -v $(pwd)/pl_lint.pl:/app/pl_lint.pl \
-            terminusdb/terminusdb-server:local \
-            swipl -f src/load_paths.pl /app/pl_lint.pl
-
-  # Unit tests
-  unit_tests:
-    runs-on: ubuntu-latest
-    needs: build_docker
-
-    steps:
-      - name: Download Docker image
-        uses: actions/download-artifact@v2
-        with:
-          name: terminusdb-server-docker-image
-
-      - name: Run unit tests
-        run: |
-          docker load < terminusdb-server-docker-image.tar.gz
-          docker run \
-            --name terminusdb \
-            terminusdb/terminusdb-server:local \
-            /app/terminusdb/terminusdb test
-
-  python_integration_tests:
-    runs-on: ubuntu-latest
-    needs: build_docker
-
-    steps:
-      - name: Download Docker image
-        uses: actions/download-artifact@v2
-        with:
-          name: terminusdb-server-docker-image
-
-      - name: Load Docker image
-        run: |
-          docker load < terminusdb-server-docker-image.tar.gz
-          # Tag a dev image because the docker-compose.yml uses
-          # a dev tag. We want it to fetch it locally instead of
-          # remotely from Docker Hub
-          docker image tag \
-            terminusdb/terminusdb-server:local \
-            terminusdb/terminusdb-server:dev
-
-      - uses: actions/checkout@v2
-        with:
-          repository: terminusdb/terminusdb-client-python
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install shed pytest tox
-          tox -e deps
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-
-      - name: Test with pytest
-        run: tox -e test
-
-  # Integration tests
-  integration_tests:
-    runs-on: ubuntu-latest
-    needs: build_docker
-
-    steps:
-      - name: Download Docker image
-        uses: actions/download-artifact@v2
-        with:
-          name: terminusdb-server-docker-image
-
-      - name: Run server
-        run: |
-          docker load < terminusdb-server-docker-image.tar.gz
-          docker run \
-            --detach \
-            --net=host \
-            terminusdb/terminusdb-server:local
-
-      - uses: actions/setup-node@v2
-        with:
-          node-version: '16'
-
-      - uses: actions/checkout@v2
-
-      - name: Run integration tests
-        working-directory: tests
-        env:
-          TERMINUSDB_DOCKER_IMAGE_TAG: terminusdb/terminusdb-server:local
-        run: |
-          npm install-ci-test
-          npm run check
-
-  # Integration tests with insecure user header
-  integration_tests_user_header:
-    runs-on: ubuntu-latest
-    needs: build_docker
-
-    steps:
-      - name: Download Docker image
-        uses: actions/download-artifact@v2
-        with:
-          name: terminusdb-server-docker-image
-
-      - name: Run server
-        run: |
-          docker load < terminusdb-server-docker-image.tar.gz
-          docker run \
-            --detach \
-            --net=host \
-            -e TERMINUSDB_INSECURE_USER_HEADER_ENABLED=true \
-            -e TERMINUSDB_INSECURE_USER_HEADER='X-Forwarded-User' \
-            terminusdb/terminusdb-server:local
-
-      - uses: actions/setup-node@v2
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-
-      - uses: actions/checkout@v2
-
-      - name: Run integration tests
-        working-directory: tests
-        env:
-          TERMINUSDB_DOCKER_IMAGE_TAG: terminusdb/terminusdb-server:local
-          TERMINUSDB_INSECURE_USER_HEADER: X-Forwarded-User
-        run: |
-          npm install-ci-test
-
-  # Integration tests with JWT
-  integration_tests_jwt:
-    runs-on: ubuntu-latest
-    needs: build_docker
-
-    steps:
-      - name: Download Docker image
-        uses: actions/download-artifact@v2
-        with:
-          name: terminusdb-server-docker-image
-
-      - name: Run server
-        run: |
-          docker load < terminusdb-server-docker-image.tar.gz
-          docker run \
-            --detach \
-            --net=host \
-            -e TERMINUSDB_JWT_ENABLED=true \
-            -e TERMINUSDB_SERVER_JWKS_ENDPOINT='https://cdn.terminusdb.com/jwks.json' \
-            terminusdb/terminusdb-server:local
-
-      - uses: actions/setup-node@v2
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-
-      - uses: actions/checkout@v2
-
-      - name: Run integration tests
-        working-directory: tests
-        env:
-          TERMINUSDB_DOCKER_IMAGE_TAG: terminusdb/terminusdb-server:local
-          TERMINUSDB_ACCESS_TOKEN: eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InRlc3RrZXkifQ.eyJodHRwOi8vdGVybWludXNkYi5jb20vc2NoZW1hL3N5c3RlbSNhZ2VudF9uYW1lIjoiYWRtaW4iLCJodHRwOi8vdGVybWludXNkYi5jb20vc2NoZW1hL3N5c3RlbSN1c2VyX2lkZW50aWZpZXIiOiJhZG1pbkB1c2VyLmNvbSIsImlzcyI6Imh0dHBzOi8vdGVybWludXNodWIuZXUuYXV0aDAuY29tLyIsInN1YiI6ImFkbWluIiwiYXVkIjpbImh0dHBzOi8vdGVybWludXNodWIvcmVnaXN0ZXJVc2VyIiwiaHR0cHM6Ly90ZXJtaW51c2h1Yi5ldS5hdXRoMC5jb20vdXNlcmluZm8iXSwiaWF0IjoxNTkzNzY5MTgzLCJhenAiOiJNSkpuZEdwMHpVZE03bzNQT1RRUG1SSkltWTJobzBhaSIsInNjb3BlIjoib3BlbmlkIHByb2ZpbGUgZW1haWwifQ.Ru03Bi6vSIQ57bC41n6fClSdxlb61m0xX6Q34Yh91gql0_CyfYRWTuqzqPMFoCefe53hPC5E-eoSFdID_u6w1ih_pH-lTTqus9OWgi07Qou3QNs8UZBLiM4pgLqcBKs0N058jfg4y6h9GjIBGVhX9Ni2ez3JGNcz1_U45BhnreE
-        run: |
-          npm install-ci-test
+  benchmark:
+    name: Benchmark
+    needs: build
+    uses: ./.github/workflows/benchmark.yml
 
   # This is required for status checks.
   all_checks_pass:
+    name: All checks pass
     runs-on: ubuntu-latest
-    needs:
-      - unit_tests
-      - integration_tests
-      - integration_tests_user_header
-      - integration_tests_jwt
-      - python_integration_tests
-      - lint
-
+    needs: test
     steps:
       - run: echo "Celebrate! 🥳"
 
-  benchmark:
-    runs-on: ubuntu-latest
-    needs: build_docker
-
-    steps:
-      - name: Download Docker image
-        uses: actions/download-artifact@v2
-        with:
-          name: terminusdb-server-docker-image
-
-      - name: Run server
-        run: |
-          docker load < terminusdb-server-docker-image.tar.gz
-          docker run \
-            --detach \
-            --net=host \
-            terminusdb/terminusdb-server:local
-
-      - uses: actions/setup-node@v2
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-
-      - uses: actions/checkout@v2
-
-      - name: Run benchmarks
-        working-directory: tests
-        run: |
-          npm ci
-          npm run bench
-
-  # Begin deployment only for push events and certain refs.
-  #
-  # This is an empty job that serves as a common dependency for downstream jobs
-  # in their `needs`.
-  begin_deploy:
+  push:
+    name: Deploy
     runs-on: ubuntu-latest
     needs: all_checks_pass
     if: |
@@ -281,18 +51,6 @@ jobs:
         github.ref == 'refs/heads/main' ||
         startsWith(github.ref, 'refs/tags/v')
       )
-
-    steps:
-      - name: Begin deploy
-        run: |
-          echo "Deploying for:"
-          echo "  event: ${{ github.event_name }}"
-          echo "  ref:   ${{ github.ref }}"
-
-  # Push Docker image to container repository.
-  push_docker:
-    runs-on: ubuntu-latest
-    needs: begin_deploy
 
     steps:
       - name: Download Docker image
@@ -334,9 +92,10 @@ jobs:
              docker push $LATEST_IMAGE
           fi
 
-  trigger_enterprise_build:
+  enterprise:
+    name: Trigger enterprise build
     runs-on: ubuntu-latest
-    needs: push_docker
+    needs: push
     if: |
       github.repository == 'terminusdb/terminusdb' &&
       github.event_name == 'push' && (
@@ -349,9 +108,11 @@ jobs:
           curl -X POST https://api.github.com/repos/${{ secrets.ENTERPRISE_REPO_OWNER }}/${{ secrets.ENTERPRISE_REPO }}/dispatches \
             -H 'Accept: application/vnd.github.everest-preview+json' \
             -u rrooij:${{ secrets.PAT }} -d '{ "event_type": "Trigger from community" }'
-  deploy:
+
+  release:
+    name: Release
     runs-on: ubuntu-latest
-    needs: push_docker
+    needs: push
     if: |
       github.repository == 'terminusdb/terminusdb' &&
       github.event_name == 'push' && (
@@ -371,16 +132,16 @@ jobs:
     - name: Delete tag and release
       uses: dev-drprasad/delete-tag-and-release@v0.1.2
       env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         tag_name: ${{ steps.release_name.outputs.tag }}
       continue-on-error: true
 
-    - name: Create a Release
+    - name: Create a release
       id: create_release
       uses: softprops/action-gh-release@v1
       env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         tag_name: ${{ steps.release_name.outputs.tag }}
         prerelease: ${{ !contains(github.ref, 'tags') }}
