@@ -36,4 +36,3 @@ main :-
                       autoload(false),
                       stand_alone(true)
                   ]).
-
