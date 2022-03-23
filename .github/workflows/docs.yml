@@ -19,9 +19,9 @@ concurrency:
 
 jobs:
 
-  # This is required for status checks. Since we don't have anything to check in
-  # the above paths, we do nothing.
+  # This is required for status checks.
   all_checks_pass:
+    name: All checks pass
     runs-on: ubuntu-latest
     steps:
-      - run: echo "Nothing to be done. 😌"
+      - run: echo "Nothing to be checked! 😌"
