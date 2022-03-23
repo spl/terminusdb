@@ -12,6 +12,7 @@
 :- use_module(enterprise(init_enterprise)).
 :- endif.
 
+
 :- use_module(core(util)).
 :- use_module(library(plunit)).
 
