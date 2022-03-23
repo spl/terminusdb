@@ -18,32 +18,23 @@ concurrency:
 
 jobs:
 
-  env:
-    runs-on: ubuntu-latest
-
-    outputs:
-      TERMINUSDB_DOCKER_IMAGE_NAME: terminusdb/terminusdb-server
-      TERMINUSDB_DOCKER_IMAGE_TAG: terminusdb/terminusdb-server:local
-      NODE_VERSION: '16'
-
-    steps:
-      - run: echo "Cleaning up the environment! 😅"
-
   # Build the Docker image.
   build_docker:
     runs-on: ubuntu-latest
-    needs: env
 
     steps:
       - uses: actions/checkout@v2
+
+      - uses: falti/dotenv-action
+        id: env
 
       - name: Build Docker image
         run: |
           docker build . \
             --file Dockerfile \
-            --tag ${{ needs.env.outputs.TERMINUSDB_DOCKER_IMAGE_TAG }} \
+            --tag ${{ steps.env.outputs.IMAGE_NAME }}:local \
             --build-arg TERMINUSDB_GIT_HASH="$(git rev-parse --verify HEAD)"
-          docker save ${{ needs.env.outputs.TERMINUSDB_DOCKER_IMAGE_TAG }} \
+          docker save ${{ steps.env.outputs.IMAGE_NAME }}:local \
             | gzip > terminusdb-server-docker-image.tar.gz
 
       - name: Upload Docker image
@@ -54,18 +45,18 @@ jobs:
 
   lint:
     runs-on: ubuntu-latest
-    needs:
-      - env
-      - build_docker
+    needs: build_docker
     env:
       SWIPL_LINTER_VERSION: v0.7
 
     steps:
-
       - name: Download Docker image
         uses: actions/download-artifact@v2
         with:
           name: terminusdb-server-docker-image
+
+      - uses: falti/dotenv-action
+        id: env
 
         # Can be found on: https://github.com/terminusdb-labs/swipl-lint/
       - name: Download script
@@ -77,41 +68,43 @@ jobs:
           docker run \
             --name terminusdb \
             -v $(pwd)/pl_lint.pl:/app/pl_lint.pl \
-            ${{ needs.env.outputs.TERMINUSDB_DOCKER_IMAGE_TAG }} \
+            ${{ steps.env.outputs.IMAGE_NAME }}:local \
             swipl -f src/load_paths.pl /app/pl_lint.pl
 
   # Unit tests
   unit_tests:
     runs-on: ubuntu-latest
-    needs:
-      - env
-      - build_docker
+    needs: build_docker
 
     steps:
       - name: Download Docker image
         uses: actions/download-artifact@v2
         with:
           name: terminusdb-server-docker-image
+
+      - uses: falti/dotenv-action
+        id: env
 
       - name: Run unit tests
         run: |
           docker load < terminusdb-server-docker-image.tar.gz
           docker run \
             --name terminusdb \
-            ${{ needs.env.outputs.TERMINUSDB_DOCKER_IMAGE_TAG }} \
+            ${{ steps.env.outputs.IMAGE_NAME }}:local \
             /app/terminusdb/terminusdb test
 
   python_integration_tests:
     runs-on: ubuntu-latest
-    needs:
-      - env
-      - build_docker
+    needs: build_docker
 
     steps:
       - name: Download Docker image
         uses: actions/download-artifact@v2
         with:
           name: terminusdb-server-docker-image
+
+      - uses: falti/dotenv-action
+        id: env
 
       - name: Load Docker image
         run: |
@@ -120,8 +113,8 @@ jobs:
           # a dev tag. We want it to fetch it locally instead of
           # remotely from Docker Hub
           docker image tag \
-            ${{ needs.env.outputs.TERMINUSDB_DOCKER_IMAGE_TAG }} \
-            ${{ needs.env.outputs.TERMINUSDB_DOCKER_IMAGE_NAME }}:dev
+            ${{ steps.env.outputs.IMAGE_NAME }}:local \
+            ${{ steps.env.outputs.IMAGE_NAME }}:dev
 
       - uses: actions/checkout@v2
         with:
@@ -140,17 +133,16 @@ jobs:
   # Integration tests
   integration_tests:
     runs-on: ubuntu-latest
-    needs:
-      - env
-      - build_docker
-    env:
-      TERMINUSDB_DOCKER_IMAGE_TAG: ${{ needs.env.outputs.TERMINUSDB_DOCKER_IMAGE_TAG }}
+    needs: build_docker
 
     steps:
       - name: Download Docker image
         uses: actions/download-artifact@v2
         with:
           name: terminusdb-server-docker-image
+
+      - uses: falti/dotenv-action
+        id: env
 
       - name: Run server
         run: |
@@ -158,16 +150,18 @@ jobs:
           docker run \
             --detach \
             --net=host \
-            ${{ needs.env.outputs.TERMINUSDB_DOCKER_IMAGE_TAG }}
+            ${{ steps.env.outputs.IMAGE_NAME }}:local
 
       - uses: actions/setup-node@v2
         with:
-          node-version: ${{ needs.env.outputs.NODE_VERSION }}
+          node-version: ${{ steps.env.outputs.NODE_VERSION }}
 
       - uses: actions/checkout@v2
 
       - name: Run integration tests
         working-directory: tests
+        env:
+          TERMINUSDB_DOCKER_IMAGE_TAG: ${{ steps.env.outputs.IMAGE_NAME }}:local
         run: |
           npm install-ci-test
           npm run check
@@ -175,17 +169,16 @@ jobs:
   # Integration tests with insecure user header
   integration_tests_user_header:
     runs-on: ubuntu-latest
-    needs:
-      - env
-      - build_docker
-    env:
-      TERMINUSDB_DOCKER_IMAGE_TAG: ${{ needs.env.outputs.TERMINUSDB_DOCKER_IMAGE_TAG }}
+    needs: build_docker
 
     steps:
       - name: Download Docker image
         uses: actions/download-artifact@v2
         with:
           name: terminusdb-server-docker-image
+
+      - uses: falti/dotenv-action
+        id: env
 
       - name: Run server
         run: |
@@ -195,17 +188,18 @@ jobs:
             --net=host \
             -e TERMINUSDB_INSECURE_USER_HEADER_ENABLED=true \
             -e TERMINUSDB_INSECURE_USER_HEADER='X-Forwarded-User' \
-            ${{ needs.env.outputs.TERMINUSDB_DOCKER_IMAGE_TAG }}
+            ${{ steps.env.outputs.IMAGE_NAME }}:local
 
       - uses: actions/setup-node@v2
         with:
-          node-version: ${{ needs.env.outputs.NODE_VERSION }}
+          node-version: ${{ steps.env.outputs.NODE_VERSION }}
 
       - uses: actions/checkout@v2
 
       - name: Run integration tests
         working-directory: tests
         env:
+          TERMINUSDB_DOCKER_IMAGE_TAG: ${{ steps.env.outputs.IMAGE_NAME }}:local
           TERMINUSDB_INSECURE_USER_HEADER: X-Forwarded-User
         run: |
           npm install-ci-test
@@ -213,17 +207,16 @@ jobs:
   # Integration tests with JWT
   integration_tests_jwt:
     runs-on: ubuntu-latest
-    needs:
-      - env
-      - build_docker
-    env:
-      TERMINUSDB_DOCKER_IMAGE_TAG: ${{ needs.env.outputs.TERMINUSDB_DOCKER_IMAGE_TAG }}
+    needs: build_docker
 
     steps:
       - name: Download Docker image
         uses: actions/download-artifact@v2
         with:
           name: terminusdb-server-docker-image
+
+      - uses: falti/dotenv-action
+        id: env
 
       - name: Run server
         run: |
@@ -233,17 +226,18 @@ jobs:
             --net=host \
             -e TERMINUSDB_JWT_ENABLED=true \
             -e TERMINUSDB_SERVER_JWKS_ENDPOINT='https://cdn.terminusdb.com/jwks.json' \
-            ${{ needs.env.outputs.TERMINUSDB_DOCKER_IMAGE_TAG }}
+            ${{ steps.env.outputs.IMAGE_NAME }}:local
 
       - uses: actions/setup-node@v2
         with:
-          node-version: ${{ needs.env.outputs.NODE_VERSION }}
+          node-version: ${{ steps.env.outputs.NODE_VERSION }}
 
       - uses: actions/checkout@v2
 
       - name: Run integration tests
         working-directory: tests
         env:
+          TERMINUSDB_DOCKER_IMAGE_TAG: ${{ steps.env.outputs.IMAGE_NAME }}:local
           TERMINUSDB_ACCESS_TOKEN: eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InRlc3RrZXkifQ.eyJodHRwOi8vdGVybWludXNkYi5jb20vc2NoZW1hL3N5c3RlbSNhZ2VudF9uYW1lIjoiYWRtaW4iLCJodHRwOi8vdGVybWludXNkYi5jb20vc2NoZW1hL3N5c3RlbSN1c2VyX2lkZW50aWZpZXIiOiJhZG1pbkB1c2VyLmNvbSIsImlzcyI6Imh0dHBzOi8vdGVybWludXNodWIuZXUuYXV0aDAuY29tLyIsInN1YiI6ImFkbWluIiwiYXVkIjpbImh0dHBzOi8vdGVybWludXNodWIvcmVnaXN0ZXJVc2VyIiwiaHR0cHM6Ly90ZXJtaW51c2h1Yi5ldS5hdXRoMC5jb20vdXNlcmluZm8iXSwiaWF0IjoxNTkzNzY5MTgzLCJhenAiOiJNSkpuZEdwMHpVZE03bzNQT1RRUG1SSkltWTJobzBhaSIsInNjb3BlIjoib3BlbmlkIHByb2ZpbGUgZW1haWwifQ.Ru03Bi6vSIQ57bC41n6fClSdxlb61m0xX6Q34Yh91gql0_CyfYRWTuqzqPMFoCefe53hPC5E-eoSFdID_u6w1ih_pH-lTTqus9OWgi07Qou3QNs8UZBLiM4pgLqcBKs0N058jfg4y6h9GjIBGVhX9Ni2ez3JGNcz1_U45BhnreE
         run: |
           npm install-ci-test
@@ -264,9 +258,7 @@ jobs:
 
   benchmark:
     runs-on: ubuntu-latest
-    needs:
-      - env
-      - build_docker
+    needs: build_docker
 
     steps:
       - name: Download Docker image
@@ -274,17 +266,20 @@ jobs:
         with:
           name: terminusdb-server-docker-image
 
+      - uses: falti/dotenv-action
+        id: env
+
       - name: Run server
         run: |
           docker load < terminusdb-server-docker-image.tar.gz
           docker run \
             --detach \
             --net=host \
-            ${{ needs.env.outputs.TERMINUSDB_DOCKER_IMAGE_TAG }}
+            ${{ steps.env.outputs.IMAGE_NAME }}:local
 
       - uses: actions/setup-node@v2
         with:
-          node-version: ${{ needs.env.outputs.NODE_VERSION }}
+          node-version: ${{ steps.env.outputs.NODE_VERSION }}
 
       - uses: actions/checkout@v2
 
@@ -318,9 +313,7 @@ jobs:
   # Push Docker image to container repository.
   push_docker:
     runs-on: ubuntu-latest
-    needs:
-      - env
-      - begin_deploy
+    needs: begin_deploy
 
     steps:
       - name: Download Docker image
@@ -328,37 +321,41 @@ jobs:
         with:
           name: terminusdb-server-docker-image
 
+      - uses: falti/dotenv-action
+        id: env
+
       - name: Push image to Docker Container Registry
         run: |
           echo '${{ secrets.DOCKER_PASS }}' | docker login -u terminusdb --password-stdin
 
-          IMAGE_ID=${{ needs.env.outputs.TERMINUSDB_DOCKER_IMAGE_NAME }}
-          # Change all uppercase to lowercase
-          IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
           # Strip git ref prefix from version
-          VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
+          VERSION=$(echo "$GITHUB_REF" | sed -e 's,.*/\(.*\),\1,')
 
+          # Use Docker `dev` tag convention for main branch
           [ "$VERSION" == "main" ] && VERSION=dev
 
-          echo IMAGE_ID=$IMAGE_ID
-          echo VERSION=$VERSION
-
           docker load < terminusdb-server-docker-image.tar.gz
-          docker tag ${{ needs.env.outputs.TERMINUSDB_DOCKER_IMAGE_TAG }} $IMAGE_ID:$VERSION
-          docker push $IMAGE_ID:$VERSION
 
-          # Use dev-COMMITHASH tag for each development
-          # version. We clean up after a certain amount of time.
+          # Image identifiers
+          LOCAL_IMAGE=${{ steps.env.outputs.IMAGE_NAME }}:local
+          VERSION_IMAGE=${{ steps.env.outputs.IMAGE_NAME }}:$VERSION
+          DEV_COMMIT_IMAGE=${{ steps.env.outputs.IMAGE_NAME }}:$VERSION-$GITHUB_SHA
+          LATEST_IMAGE=${{ steps.env.outputs.IMAGE_NAME }}:latest
+
+          # Tag and push the version image
+          docker tag $LOCAL_IMAGE $VERSION_IMAGE
+          docker push $VERSION_IMAGE
+
+          # Tag and push the dev-commit image. This is removed later.
           if [ "$VERSION" == "dev" ]; then
-             DEV_COMMIT_TAG=${IMAGE_ID}:${VERSION}-${GITHUB_SHA}
-             docker tag ${{ needs.env.outputs.TERMINUSDB_DOCKER_IMAGE_TAG }} $DEV_COMMIT_TAG
-             docker push $DEV_COMMIT_TAG
+            docker tag $LOCAL_IMAGE $DEV_COMMIT_IMAGE
+            docker push $DEV_COMMIT_IMAGE
           fi
 
-          # Use Docker `latest` tag convention when a version tag is pushed
+          # Tag and push the latest image when a version tag is pushed
           if [ $(echo "$GITHUB_REF" | grep "refs/tags/v") ]; then
-             docker tag $IMAGE_ID:$VERSION ${IMAGE_ID}:latest
-             docker push ${IMAGE_ID}:latest
+             docker tag $LOCAL_IMAGE $LATEST_IMAGE
+             docker push $LATEST_IMAGE
           fi
 
   trigger_enterprise_build:
