@@ -25,7 +25,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - uses: falti/dotenv-action
+      - uses: falti/dotenv-action@v0.2.7
         id: env
 
       - name: Build Docker image
@@ -55,7 +55,7 @@ jobs:
         with:
           name: terminusdb-server-docker-image
 
-      - uses: falti/dotenv-action
+      - uses: falti/dotenv-action@v0.2.7
         id: env
 
         # Can be found on: https://github.com/terminusdb-labs/swipl-lint/
@@ -82,7 +82,7 @@ jobs:
         with:
           name: terminusdb-server-docker-image
 
-      - uses: falti/dotenv-action
+      - uses: falti/dotenv-action@v0.2.7
         id: env
 
       - name: Run unit tests
@@ -103,7 +103,7 @@ jobs:
         with:
           name: terminusdb-server-docker-image
 
-      - uses: falti/dotenv-action
+      - uses: falti/dotenv-action@v0.2.7
         id: env
 
       - name: Load Docker image
@@ -141,7 +141,7 @@ jobs:
         with:
           name: terminusdb-server-docker-image
 
-      - uses: falti/dotenv-action
+      - uses: falti/dotenv-action@v0.2.7
         id: env
 
       - name: Run server
@@ -177,7 +177,7 @@ jobs:
         with:
           name: terminusdb-server-docker-image
 
-      - uses: falti/dotenv-action
+      - uses: falti/dotenv-action@v0.2.7
         id: env
 
       - name: Run server
@@ -215,7 +215,7 @@ jobs:
         with:
           name: terminusdb-server-docker-image
 
-      - uses: falti/dotenv-action
+      - uses: falti/dotenv-action@v0.2.7
         id: env
 
       - name: Run server
@@ -266,7 +266,7 @@ jobs:
         with:
           name: terminusdb-server-docker-image
 
-      - uses: falti/dotenv-action
+      - uses: falti/dotenv-action@v0.2.7
         id: env
 
       - name: Run server
@@ -321,7 +321,7 @@ jobs:
         with:
           name: terminusdb-server-docker-image
 
-      - uses: falti/dotenv-action
+      - uses: falti/dotenv-action@v0.2.7
         id: env
 
       - name: Push image to Docker Container Registry
