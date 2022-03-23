@@ -23,7 +23,7 @@ jobs:
     name: Print ref
     runs-on: ubuntu-latest
     steps:
-      - run: echo "GITHUB_REF=$GITHUB_REF"
+      - run: echo "gitub.ref=${{ github.ref }}"
 
   build:
     name: Build
