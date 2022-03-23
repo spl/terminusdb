@@ -27,6 +27,8 @@ jobs:
 
       - uses: falti/dotenv-action@v0.2.7
         id: env
+        with:
+          log-variables: true
 
       - name: Build Docker image
         run: |
