@@ -5,7 +5,7 @@ on:
 
 jobs:
 
-  build_docker:
+  build:
     name: Build Docker image
     runs-on: ubuntu-latest
 
