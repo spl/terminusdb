@@ -1,5 +1,6 @@
 <img src="https://github.com/terminusdb/terminusdb-web-assets/blob/master/images/TerminusDB-Pop2.gif">
 
+
 ## A toolkit for building collaborative applications
 
 [![CI](https://github.com/terminusdb/terminusdb/actions/workflows/ci.yml/badge.svg?event=push)](https://github.com/terminusdb/terminusdb/actions/workflows/ci.yml)
