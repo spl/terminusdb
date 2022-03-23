@@ -1,4 +1,4 @@
-name: Test
+name: Integration tests
 
 on:
   workflow_call:
@@ -67,8 +67,8 @@ jobs:
       - name: Test with pytest
         run: tox -e test
 
-  integration_tests:
-    name: Integration (basic auth)
+  basic_auth:
+    name: With basic auth
     runs-on: ubuntu-latest
 
     steps:
@@ -99,8 +99,8 @@ jobs:
           npm install-ci-test
           npm run check
 
-  integration_tests_user_header:
-    name: Integration (user header)
+  user_header:
+    name: With user header
     runs-on: ubuntu-latest
 
     steps:
@@ -132,8 +132,8 @@ jobs:
           TERMINUSDB_INSECURE_USER_HEADER: X-Forwarded-User
         run: npm install-ci-test
 
-  integration_tests_jwt:
-    name: Integration (JWT)
+  jwt:
+    name: With JWT
     runs-on: ubuntu-latest
 
     steps:
