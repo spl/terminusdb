@@ -19,6 +19,12 @@ env:
 
 jobs:
 
+  ref:
+    name: Print ref
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "GITHUB_REF=$GITHUB_REF"
+
   build:
     name: Build
     uses: ./.github/workflows/build.yml
