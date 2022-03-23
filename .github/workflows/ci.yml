@@ -11,7 +11,7 @@ on:
 
 # Prevent redundant workflows triggered by push and pull_request events.
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ci-${{ github.ref_name }}
   cancel-in-progress: true
 
 env:
@@ -24,6 +24,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: echo "gitub.ref=${{ github.ref }}"
+      - run: echo "gitub.ref_name=${{ github.ref_name }}"
+      - run: echo "gitub.repository=${{ github.repository }}"
 
   build:
     name: Build

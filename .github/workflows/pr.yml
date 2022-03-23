@@ -9,7 +9,7 @@ on:
 
 # Prevent redundant workflows triggered by push and pull_request events.
 concurrency:
-  group: ci-${{ github.head_ref || github.ref }}
+  group: ci-${{ github.head_ref }}
   cancel-in-progress: true
 
 jobs:
@@ -20,6 +20,7 @@ jobs:
     steps:
       - run: echo "gitub.ref=${{ github.ref }}"
       - run: echo "gitub.head_ref=${{ github.head_ref }}"
+      - run: echo "gitub.repository=${{ github.repository }}"
 
   build:
     name: Build
