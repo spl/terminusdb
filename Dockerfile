@@ -15,16 +15,15 @@ RUN set -eux; \
     make install-jwt
 
 FROM ghcr.io/spl/terminusdb-builder:v1 AS rust_builder
-WORKDIR /app/rust
-COPY ./Makefile /app/rust
-COPY ./src/rust /app/rust
+COPY ./Makefile /app/terminusdb/Makefile
+COPY ./src/rust /app/terminusdb/src/rust
 ARG MAKE_RUST_TARGET=module
 RUN make ${MAKE_RUST_TARGET}
 
 FROM ghcr.io/spl/terminusdb-builder:v1 AS builder
 COPY ./ /app/terminusdb
 COPY --from=pack_installer /root/.local/share/swi-prolog/pack/ /usr/share/swi-prolog/pack
-COPY --from=rust_builder /app/rust/librust.so /app/terminusdb/src/rust/librust.so
+COPY --from=rust_builder /app/terminusdb/src/rust/librust.so /app/terminusdb/src/rust/librust.so
 ARG MAKE_FINAL_TARGET=community
 ARG TERMINUSDB_GIT_HASH=null
 ENV TERMINUSDB_GIT_HASH=${TERMINUSDB_GIT_HASH}
