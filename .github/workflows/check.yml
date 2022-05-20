@@ -20,10 +20,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - uses: actions/checkout@v2
+        with:
+          repository: ${{ inputs.test_repository }}
+          ref: ${{ inputs.test_ref }}
+
       - name: Run tests
         run: |
           docker run \
-            --volume $(pwd)/terminusdb:/app/terminusdb \
+            --volume $(pwd):/app/terminusdb \
             ${IMAGE} \
             make test
 
@@ -175,9 +180,14 @@ jobs:
       SWIPL_LINTER_VERSION: v0.8
 
     steps:
+      - uses: actions/checkout@v2
+        with:
+          repository: ${{ inputs.test_repository }}
+          ref: ${{ inputs.test_ref }}
+
       - name: Run lint
         run: |
           docker run \
-            --volume $(pwd)/terminusdb:/app/terminusdb \
+            --volume $(pwd):/app/terminusdb \
             ${IMAGE} \
             make lint
