@@ -20,8 +20,18 @@ RUST_LIBRARY_FILE:=src/rust/target/release/$(RUST_LIB_NAME)
 ENTERPRISE_RUST_LIBRARY_FILE:=terminusdb-enterprise/rust/target/release/$(RUST_LIB_NAME)
 RUST_TARGET:=src/rust/$(RUST_LIB_TARGET_NAME)
 
+TMP_DIR ?= $(CURDIR)/tmp
+
+JWT_VERSION=v0.0.5
+TUS_VERSION=v0.0.10
+
 SWIPL_LINT_VERSION=v0.8
-SWIPL_LINT_PATH=./tmp/pl_lint-$(SWIPL_LINT_VERSION).pl
+SWIPL_LINT_PATH=$(TMP_DIR)/pl_lint-$(SWIPL_LINT_VERSION).pl
+
+PACK_INSTALL_OPTIONS=[interactive(false), upgrade(true)]
+
+TUS_DIR = $(TMP_DIR)/tus
+JWT_DIR = $(TMP_DIR)/jwt_io
 
 ################################################################################
 
@@ -51,10 +61,21 @@ docker:
 	  --tag terminusdb/terminusdb-server:local \
 	  --build-arg TERMINUSDB_GIT_HASH="$(git rev-parse --verify HEAD)"
 
-# Install all pack dependencies.
+# Install minimal pack dependencies.
 .PHONY: install-deps
-install-deps:
-	$(SWIPL) -g 'Options=[interactive(false), upgrade(true), test(false)], pack_install(tus, Options), halt'
+install-deps: install-tus
+
+# Install the tus pack.
+.PHONY: install-tus
+install-tus:
+	git clone --depth 1 --branch $(TUS_VERSION) https://github.com/terminusdb/tus.git $(TUS_DIR)
+	$(SWIPL) -g "pack_install('file://$(TUS_DIR)', $(PACK_INSTALL_OPTIONS)), halt"
+
+# Install the jwt pack.
+.PHONY: install-jwt
+install-jwt:
+	git clone --depth 1 --branch $(JWT_VERSION) https://github.com/terminusdb-labs/jwt_io.git $(JWT_DIR)
+	$(SWIPL) -g "pack_install('file://$(JWT_DIR)', $(PACK_INSTALL_OPTIONS)), halt"
 
 # Download and run the lint tool.
 .PHONY: lint

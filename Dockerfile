@@ -1,37 +1,42 @@
-FROM terminusdb/swipl:v8.4.2 as pack_installer
-ENV TUS_VERSION v0.0.10
+FROM terminusdb/swipl:v8.4.2 AS base
+ENV TERMINUSDB_RUNTIME_DEPS git libjwt0 openssl
+RUN set -eux; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends ${TERMINUSDB_RUNTIME_DEPS}; \
+    rm -rf /var/lib/apt/lists/*; \
+    rm -rf /var/cache/apt/*
+
+FROM ghcr.io/spl/terminusdb-builder:v1 AS pack_installer
 WORKDIR /app/pack
-RUN export BUILD_DEPS="git build-essential make libjwt-dev libssl-dev pkg-config" \
-        && apt-get update && apt-get install $BUILD_DEPS -y --no-install-recommends \
-        && git clone --single-branch --branch v0.0.5 https://github.com/terminusdb-labs/jwt_io.git jwt_io \
-        && git clone --single-branch --branch $TUS_VERSION https://github.com/terminusdb/tus.git tus \
-        && swipl -g "pack_install('file:///app/pack/jwt_io', [interactive(false)])" \
-        && swipl -g "pack_install('file:///app/pack/tus', [interactive(false)])"
+COPY ./Makefile /app/pack
+RUN set -eux; \
+    export TMP_DIR=$(mktemp --directory); \
+    make install-deps; \
+    make install-jwt
 
-FROM terminusdb/swipl:v8.4.2 AS rust_builder
+FROM ghcr.io/spl/terminusdb-builder:v1 AS rust_builder
 WORKDIR /app/rust
+COPY ./Makefile /app/rust
 COPY ./src/rust /app/rust
-RUN BUILD_DEPS="git build-essential curl clang" && apt-get update \
-	&& apt-get install -y --no-install-recommends $BUILD_DEPS \
-        ca-certificates
-RUN curl https://sh.rustup.rs -sSf | bash -s -- -y
-ENV PATH="/root/.cargo/bin:${PATH}"
-RUN cargo build --release
+ARG MAKE_RUST_TARGET=module
+RUN make ${MAKE_RUST_TARGET}
 
-FROM terminusdb/swipl:v8.4.2
-WORKDIR /app/terminusdb
+FROM ghcr.io/spl/terminusdb-builder:v1 AS builder
 COPY ./ /app/terminusdb
 COPY --from=pack_installer /root/.local/share/swi-prolog/pack/ /usr/share/swi-prolog/pack
-COPY --from=rust_builder /app/rust/target/release/libterminusdb_dylib.so /app/terminusdb/src/rust/librust.so
-ARG MAKE_ARGS=""
+COPY --from=rust_builder /app/rust/librust.so /app/terminusdb/src/rust/librust.so
+ARG MAKE_FINAL_TARGET=community
 ARG TERMINUSDB_GIT_HASH=null
 ENV TERMINUSDB_GIT_HASH=${TERMINUSDB_GIT_HASH}
 ARG TERMINUSDB_JWT_ENABLED=true
 ENV TERMINUSDB_JWT_ENABLED=${TERMINUSDB_JWT_ENABLED}
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends libjwt0 make openssl && \
-    rm -rf /var/cache/apt/* && \
-    rm -rf /var/lib/apt/lists/* && \
-    touch src/rust/librust.so && \
-    make $MAKE_ARGS
+RUN set -eux; \
+    touch src/rust/librust.so; \
+    make ${MAKE_FINAL_TARGET}
+
+FROM base
+WORKDIR /app/terminusdb
+COPY ./distribution/init_docker.sh /app/terminusdb/distribution/init_docker.sh
+COPY --from=builder /app/terminusdb/terminusdb /app/terminusdb/terminusdb
+
 CMD ["/app/terminusdb/distribution/init_docker.sh"]
