@@ -6,6 +6,7 @@ on:
   workflow_dispatch:
 
 env:
+  BUILDER_IMAGE: ghcr.io/spl/terminusdb-builder:v1
   LAST_RELEASED_VERSION: 10.0.25
   CURRENT_REPO_VERSION: 10.0.26
 
@@ -74,13 +75,14 @@ jobs:
 
       - name: Run Cog to update versions in files
         run: |
-          pip install cogapp
-          cog -v
-          cog -r \
-            -D LAST_RELEASED_VERSION=$LAST_RELEASED_VERSION \
-            -D CURRENT_REPO_VERSION=$CURRENT_REPO_VERSION \
-            docs/release-steps.md \
-            src/config/terminus_config.pl
+          docker run \
+            --volume $(pwd):/app/terminusdb \
+            ${BUILDER_IMAGE} \
+            cog -r \
+              -D LAST_RELEASED_VERSION=$LAST_RELEASED_VERSION \
+              -D CURRENT_REPO_VERSION=$CURRENT_REPO_VERSION \
+              docs/release-steps.md \
+              src/config/terminus_config.pl
 
       - name: Commit changes
         uses: stefanzweifel/git-auto-commit-action@v4
@@ -102,6 +104,7 @@ jobs:
     with:
       test_repository: ${{ github.repository }}
       test_ref: ${{ github.sha }}
+      builder_image: ${{ env.BUILDER_IMAGE }}
 
   benchmark:
     name: Benchmark

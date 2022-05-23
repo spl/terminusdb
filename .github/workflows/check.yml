@@ -9,9 +9,9 @@ on:
       test_ref:
         required: true
         type: string
-
-env:
-  IMAGE: ghcr.io/spl/terminusdb-builder:v1
+      builder_image:
+        required: true
+        type: string
 
 jobs:
 
@@ -29,7 +29,7 @@ jobs:
         run: |
           docker run \
             --volume $(pwd):/app/terminusdb \
-            ${IMAGE} \
+            ${{ inputs.builder_image }} \
             make test
 
   python_client:
@@ -189,5 +189,5 @@ jobs:
         run: |
           docker run \
             --volume $(pwd):/app/terminusdb \
-            ${IMAGE} \
+            ${{ inputs.builder_image }} \
             bash -c 'make install-deps && make lint'
