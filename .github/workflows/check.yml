@@ -190,4 +190,4 @@ jobs:
           docker run \
             --volume $(pwd):/app/terminusdb \
             ${IMAGE} \
-            make lint
+            bash -c 'make install-deps && make lint'
